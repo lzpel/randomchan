@@ -1,0 +1,11 @@
+Google App Engine が修正に鈍感なときは一時的に削除してデプロイし戻して二回目のデプロイをすれば反映される
+
+CMODULEのwhitelistに記載されていないパッケージが引っかかった時
+該当の上流のimport を削除すると動く場合が有る。
+python-binanceのhelperのimport dataparserを削除したらcmoduleが排除されて動いた
+どうせライブラリのごく一部の機能しか使っていない件に注意
+
+gcloud app deploy . --project trader-202012 全てアップロード
+別のアプリをデプロイした後に目的のアプリをデプロイすると更新が反映されやすい
+
+gcloud app deploy のあとに --version 1　とすると素直に反映される

@@ -1,0 +1,22 @@
+<html>
+<body>
+<form action="/set">
+	<input name="safe" value="{{main.key.urlsafe}}"></input>
+	<p>account</p>
+	<input name="name" value="{{main.name}}"></input>
+	<p>positive</p>
+	<input name="mail" value="{{main.data.positive}}"></input>
+	<p>negative</p>
+	<input name="word" value="{{main.data.negative}}"></input>
+	<br>
+	<button name="command" value="set">送信</button>
+	<button name="command" value="acc">認証</button>
+	<button name="command" value="del">削除</button>
+</form>
+{%for i in account%}
+<a href="/admn?safe={{i.key.urlsafe}}">name:{{i.name}}</a>
+<p>positive:{{i.data.positive}}</p>
+<p>negative:{{i.data.nagative}}</p>
+{%endfor%}
+</body>
+</html>

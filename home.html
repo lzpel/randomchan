@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+	<meta name="description" content="">
+	<meta name="author" content="">
+	<link rel="icon" href="../../favicon.ico">
+
+	<title>らんだむちゃん</title>
+	<!-- Latest compiled and minified CSS -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+		  integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+	<!-- Optional theme -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+		  integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+	<!-- Latest compiled and minified JavaScript -->
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
+			integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+			crossorigin="anonymous"></script>
+</head>
+
+<body>
+
+<div class="container theme-showcase" role="main">
+
+	<!-- Main jumbotron for a primary marketing message or call to action -->
+	<div class="jumbotron">
+		<h1>らんだむちゃん</h1>
+		<p>
+			らんだむちゃんは人工知能です。指定の大学の学生を自動的にフォローします。
+			タイムラインを形態素解析し保存します。30分に一回マルコフ連鎖を用いて大学生らしい事を呟きます。
+			大阪府立大学コンピューター研究会ランダムで開発されました。
+		</p>
+		<img src="/icon.png" class="img-responsive center-block">
+	</div>
+
+
+	<div class="page-header">
+		<a class="btn btn-lg btn-default" href="https://github.com/misumi3104/randomchan">らんだむちゃんのソ−スコード</a>
+		<a class="btn btn-lg btn-default" href="http://computerhouserandom.web.fc2.com/">大阪府立大学コンピューター研究会ランダム</a>
+		<a class="btn btn-lg btn-default" href="https://twitter.com/c_h_random">ランダムのツイッター</a>
+	</div>
+	<div class="page-header">
+		<h1>らんだむちゃん関連ツイート</h1>
+		<a href="https://twitter.com/c_h_random">府大コンピューター研究会ランダムのツイッター</a>
+		<a class="twitter-timeline"
+		   width="100%"
+		   href="https://twitter.com/search?q=%e3%82%89%e3%82%93%e3%81%a0%e3%82%80%e3%81%a1%e3%82%83%e3%82%93"
+		   data-widget-id="902347830521610240">らんだむちゃんに関するツイート</a>
+		<script>
+	!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+"://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");
+		</script>
+	</div>
+
+	<div class="page-header">
+		<h1>稼働中のランダムちゃん</h1>
+		<table class="table">
+			<thead>
+			<tr>
+				<th>大学名</th>
+				<th>フォロー基準のbio単語</th>
+				<th>蓄積ツイート</th>
+			</tr>
+			</thead>
+			<tbody>
+			{%for i in univ%}
+			<tr>
+				<td>{{i.name}}</td>
+				<td>{{i.text}}</td>
+				<td>{{i.word}}</td>
+			</tr>
+			{%endfor%}
+			</tbody>
+		</table>
+	</div>
+</div> <!-- /container -->
+
+
+<!-- Bootstrap core JavaScript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+﻿runtime: python27
+api_version: 1
+threadsafe: yes
+
+handlers:
+
+- url: /(.*\..*)
+  static_files: \1
+  upload: .*\.(txt|jpg|png|gif|woff|woff2|ttf|css|js|svg)
+
+
+- url: /.*
+  script: gae.app
+
+
+libraries:
+- name: webapp2
+  version: "2.5.2"
+- name: ssl
+  version: latest
+
+env_variables:
+  GAE_USE_SOCKETS_HTTPLIB : True
+
+skip_files:
+- venv/
+- .*.so$
+- .*.exe$
+- .*.pyc$
+- .*(ffmpeg|ffplay|ffprobe)$

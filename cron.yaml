@@ -1,0 +1,4 @@
+﻿cron:
+#- description: "minute price"
+#  url: /minute
+#  schedule: every 1 minutes
