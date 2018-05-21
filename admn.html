@@ -15,8 +15,8 @@
 </form>
 {%for i in account%}
 <a href="/admn?safe={{i.key.urlsafe}}">name:{{i.name}}</a>
-<p>positive:{{i.data.positive}}</p>
-<p>negative:{{i.data.negative}}</p>
+<p>positive:{%for i in main.data.positive%}{{i}} {%endfor%}</p>
+<p>negative:{%for i in main.data.negative%}{{i}} {%endfor%}</p>
 {%endfor%}
 </body>
 </html>
