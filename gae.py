@@ -7,37 +7,31 @@ from google.appengine.api import urlfetch
 
 def httpfunc(method, url, params, payload, header):
 	if params:
-		url+="?"+urllib.urlencode(params)
-	r = urlfetch.fetch(url=url, payload=payload, method=urlfetch.POST if method=="POST" else urlfetch.GET, headers=header)
+		url += "?" + urllib.urlencode(params)
+	r = urlfetch.fetch(url=url, payload=payload, method=urlfetch.POST if method == "POST" else urlfetch.GET, headers=header)
 	return (r.status_code, r.content)
 
 
+def gettoken(alltext):
+	data = json.dumps({"document": {"type": "PLAIN_TEXT", "content": alltext}, "encodingType": "UTF8", })
+	r = request("post", "https://language.googleapis.com/v1beta2/documents:analyzeSyntax", {"key": google}, data, {'content-type': 'application/json'})
+	j = r.getjson()
+	start,result=0,[]
+	for i in j["tokens"]:
+		text=i["text"]["content"]
+		type=i["partOfSpeech"]["tag"]
+		end= alltext.find(text, start)
+		result.append({"thistype":i["partOfSpeech"]["tag"],"thistext":i["text"]["content"],"before":alltext[start:end]})
+		start=end+len(text)
+	for i,x in enumerate(result):
+		if i!=0:
+			result[i-1].update({"nexttext":x["thistext"],"nexttype":x["thistype"]})
+		if i!=len(result)-1:
+			result[i+1].update({"backtext":x["thistext"],"backtype":x["thistype"]})
+	return result
+
+
 class work(workhandler):
-
-	def get_token(text):
-		data = {
-			"document": {
-				"type": "PLAIN_TEXT",
-				"content": text
-			},
-			"encodingType": "UTF8",
-		}
-		params = {
-			"key": google
-		}
-		headers = {
-			'content-type': 'application/json'
-		}
-		req = request("post", "https://language.googleapis.com/v1beta2/documents:analyzeSyntax?key=" + google, data, None)
-		j = req.json()
-		r = [[i["partOfSpeech"]["tag"], i["text"]["content"]] for i in j["tokens"]]
-		start = 0
-		for w in r:
-			tmp = text.find(w[1], start) + len(w[1])
-			w[1] = text[start:tmp]
-			start = tmp
-		return r
-
 	def work(s, i):
 		sethttpfunc(httpfunc)
 		if i.path == "/":
@@ -77,12 +71,13 @@ class work(workhandler):
 			if i.command == "del":
 				m.key.delete()
 				s.redirect("/admn")
-		if i.path == "/study":
+		if i.path == "/store":
 			accounts = base.query(base.cate == "account").order(-base.bone).fetch()
-			for i in accounts:
+			for a in accounts:
 				r = "https://api.twitter.com/1.1/statuses/home_timeline.json", {"count": 10}
-				r = request_oauth10(consumer_key, consumer_sec, i.data["oauth_token"], i.data["oauth_token_secret"], "GET", r[0], r[1])
+				r = request_oauth10(consumer_key, consumer_sec, a.data["oauth_token"], a.data["oauth_token_secret"], "GET", r[0], r[1])
 				for j in r.getjson():
+					#条件絞り込み
 					if all(j["source"].find(k) < 0 for k in source):
 						continue
 					if "retweeted_status" in j:
@@ -90,19 +85,34 @@ class work(workhandler):
 					entity = j["entities"]
 					if entity.get("media", None) or entity.get("urls", None):
 						continue
-					data = {
-						"document": {"type": "PLAIN_TEXT", "content": "I am a Kyoto University student"},
-						"encodingType": "UTF8",
-					}
-					headers = {
-						'content-type': 'application/json'
-					}
-					req = request("post", "https://language.googleapis.com/v1beta2/documents:analyzeSyntax", {"key": google}, data, headers).getjson()
-					pass
-				pass
-		if False:
-			print(r.getjson())
-			pass
+					m=base(cate="tweet", kusr=a.key, data=j, temp=gettoken(j["text"]))
+					m.put()
+			base.delete_multi(base.query(base.cate == "tweet", base.bone < datetime.datetime.now()-datetime.timedelta(days=30)).fetch(keys_only=True))
+		if i.path=="/update":
+			accounts = base.query(base.cate == "account").order(-base.bone).fetch()
+			for a in accounts:
+				tweets = base.query(base.cate == "tweet",base.kusr==a.key).order(-base.bone).fetch()
+				every=[]
+				original=tweets[0].temp
+				for t in tweets:
+					every.extend(t.temp)
+				generate=list(original)
+				for j,x in enumerate(original):
+					choice=[]
+					for k in every:
+						if x.get("backtext",1)==k.get("backtext",1) and x.get("backtype",1)==k.get("backtype",1):
+							if x.get("nexttext",1)==k.get("nexttext",1) and x.get("nexttype",1)==k.get("nexttype",1):
+								choice.append(k)
+					generate[j]=random.choice(choice)
+				status="".join(x["before"]+x["thistext"] for x in generate)
+				r = "POST","https://api.twitter.com/1.1/statuses/update.json", {"status": status}
+				r = request_oauth10(consumer_key, consumer_sec, a.data["oauth_token"], a.data["oauth_token_secret"], r[0], r[1],r[2])
+
+
+		if i.path == "/show":
+			print(json.dumps([k.data for k in base.query(base.cate == "tweet").order(-base.bone).fetch()],indent=4))
+		if i.path == "/test":
+			base.query(base.cate == "tweet").order(-base.bone).fetch()
 
 
 app = work.getapp()

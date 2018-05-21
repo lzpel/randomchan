@@ -53,7 +53,7 @@ def request_oauth10(consumer_key, consumer_secret, access_token, access_token_se
 	if method=="GET":
 		return request(method, url, param, None, header)
 	if method=="POST":
-		return request(method, url, None, param, header)
+		return request(method, url, None, urlencode(param), header)
 
 
 def twitter_post_test(consumer_key, consumer_secret,callback):

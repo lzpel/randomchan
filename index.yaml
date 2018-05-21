@@ -20,3 +20,10 @@ indexes:
   - name: cate
   - name: bone
     direction: desc
+
+- kind: base
+  properties:
+  - name: cate
+  - name: kusr
+  - name: bone
+    direction: desc
