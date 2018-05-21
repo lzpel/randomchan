@@ -5,9 +5,9 @@
 	<p>account</p>
 	<input name="name" value="{{main.name}}"></input>
 	<p>positive</p>
-	<input name="mail" value="{{main.data.positive}}"></input>
+	<input name="positive" value="{%for i in main.data.positive%}{{i}} {%endfor%}"></input>
 	<p>negative</p>
-	<input name="word" value="{{main.data.negative}}"></input>
+	<input name="negative" value="{%for i in main.data.negative%}{{i}} {%endfor%}"></input>
 	<br>
 	<button name="command" value="set">送信</button>
 	<button name="command" value="acc">認証</button>
@@ -16,7 +16,7 @@
 {%for i in account%}
 <a href="/admn?safe={{i.key.urlsafe}}">name:{{i.name}}</a>
 <p>positive:{{i.data.positive}}</p>
-<p>negative:{{i.data.nagative}}</p>
+<p>negative:{{i.data.negative}}</p>
 {%endfor%}
 </body>
 </html>

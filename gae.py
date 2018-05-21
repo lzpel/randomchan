@@ -30,6 +30,37 @@ def gettoken(alltext):
 			result[i+1].update({"backtext":x["thistext"],"backtype":x["thistype"]})
 	return result
 
+def friend(ck,cs,tk,ts,count,positive,negative):
+	def find(ck,cs,tk,ts, target, count,positive,negative):
+		# 条件に適合し未だフォローして無いならフォロー
+		# 条件に適応せずフォローしているなら案フォロー
+		if target:
+			target={"user_id":target}
+		else:
+			target={}
+		friends = request_oauth10(ck, cs, tk, ts, "GET","https://api.twitter.com/1.1/friends/ids.json", target).getjson()
+		friends=friends["ids"]
+		friends = random.sample(friends,min(count,len(friends)))
+		for n,i in enumerate(friends):
+			user = request_oauth10(ck, cs, tk, ts, "GET","https://api.twitter.com/1.1/users/show.json", {"user_id":i}).getjson()
+			#条件
+			tmp=(user["screen_name"]+user["name"]+user["location"]+user["description"]).lower()
+			flag=any(tmp.find(w.lower()) >= 0 for w in positive) and all(tmp.find(w.lower()) < 0 for w in negative)
+			flag=flag and not user["protected"]
+			flag=flag and (user["friends_count"]/user["followers_count"])<1.5
+			#処理
+			print("num:{0} flag:{1} follow:{2} screen:{3}".format(n,flag,user["following"],user["screen_name"]))
+			if flag and not user["following"]:
+				request_oauth10(ck, cs, tk, ts, "POST", "https://api.twitter.com/1.1/friendships/create.json", {"user_id": i})
+				print("follow")
+			if user["following"] and not flag:
+				request_oauth10(ck, cs, tk, ts, "POST", "https://api.twitter.com/1.1/friendships/destroy.json", {"user_id": i})
+				print("unfollow")
+		return friends
+	r=find(ck,cs,tk,ts,None,count,positive,negative)
+	find(ck,cs,tk,ts,random.choice(r),count,positive,negative)
+
+
 
 class work(workhandler):
 	def work(s, i):
@@ -57,8 +88,8 @@ class work(workhandler):
 			if i.command == "set":
 				m.data = m.data or {}
 				m.data.update({
-					"positive": i.positive,
-					"negative": i.nagative
+					"positive": i.positive.split(),
+					"negative": i.negative.split()
 				})
 				m.put()
 				s.redirect("/admn")
@@ -87,6 +118,7 @@ class work(workhandler):
 						continue
 					m=base(cate="tweet", kusr=a.key, data=j, temp=gettoken(j["text"]))
 					m.put()
+				friend(consumer_key, consumer_sec, a.data["oauth_token"], a.data["oauth_token_secret"], 10, a.data["positive"], a.data["negative"])
 			base.delete_multi(base.query(base.cate == "tweet", base.bone < datetime.datetime.now()-datetime.timedelta(days=30)).fetch(keys_only=True))
 		if i.path=="/update":
 			accounts = base.query(base.cate == "account").order(-base.bone).fetch()
@@ -107,12 +139,6 @@ class work(workhandler):
 				status="".join(x["before"]+x["thistext"] for x in generate)
 				r = "POST","https://api.twitter.com/1.1/statuses/update.json", {"status": status}
 				r = request_oauth10(consumer_key, consumer_sec, a.data["oauth_token"], a.data["oauth_token_secret"], r[0], r[1],r[2])
-
-
-		if i.path == "/show":
-			print(json.dumps([k.data for k in base.query(base.cate == "tweet").order(-base.bone).fetch()],indent=4))
-		if i.path == "/test":
-			base.query(base.cate == "tweet").order(-base.bone).fetch()
 
 
 app = work.getapp()

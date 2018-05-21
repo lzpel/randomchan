@@ -2,3 +2,11 @@
 #- description: "minute price"
 #  url: /minute
 #  schedule: every 1 minutes
+
+- description: "store"
+  url: /store
+  schedule: every 10 minutes
+
+- description: "update"
+  url: /update
+  schedule: every 30 minutes
