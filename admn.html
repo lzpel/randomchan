@@ -15,8 +15,9 @@
 </form>
 {%for i in account%}
 <a href="/admn?safe={{i.key.urlsafe}}">name:{{i.name}}</a>
-<p>positive:{%for i in main.data.positive%}{{i}} {%endfor%}</p>
-<p>negative:{%for i in main.data.negative%}{{i}} {%endfor%}</p>
+<a href="https://twitter.com/{{i.name}}">tweets</a>
+<p>positive:{%for j in i.data.positive%}{{j}} {%endfor%}</p>
+<p>negative:{%for j in i.data.negative%}{{j}} {%endfor%}</p>
 {%endfor%}
 </body>
 </html>

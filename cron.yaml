@@ -5,8 +5,8 @@
 
 - description: "store"
   url: /store
-  schedule: every 10 minutes
+  schedule: every 20 minutes
 
 - description: "update"
   url: /update
-  schedule: every 30 minutes
+  schedule: every 1 minutes

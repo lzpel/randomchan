@@ -27,3 +27,8 @@ indexes:
   - name: kusr
   - name: bone
     direction: desc
+
+- kind: base
+  properties:
+  - name: cate
+  - name: last

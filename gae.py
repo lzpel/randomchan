@@ -1,7 +1,9 @@
 # -encoding:utf-8
+import urllib
 from template import *
 from request import *
 from gitignore import *
+from datetime import timedelta,datetime
 from google.appengine.api import urlfetch
 
 
@@ -57,8 +59,10 @@ def friend(ck,cs,tk,ts,count,positive,negative):
 				request_oauth10(ck, cs, tk, ts, "POST", "https://api.twitter.com/1.1/friendships/destroy.json", {"user_id": i})
 				print("unfollow")
 		return friends
-	r=find(ck,cs,tk,ts,None,count,positive,negative)
-	find(ck,cs,tk,ts,random.choice(r),count,positive,negative)
+	if True:
+		r=find(ck,cs,tk,ts,None,count,positive,negative)
+	if r:
+		r=find(ck,cs,tk,ts,random.choice(r),count,positive,negative)
 
 
 
@@ -66,7 +70,10 @@ class work(workhandler):
 	def work(s, i):
 		sethttpfunc(httpfunc)
 		if i.path == "/":
-			s.write_temp("home.html", None)
+			out={
+				"account":base.query(base.cate == "account").order(-base.bone).fetch()
+			}
+			s.write_temp("home.html", out)
 		if i.path == "/admn":
 			out = {
 				"account": base.query(base.cate == "account").order(-base.bone).fetch(),
@@ -82,11 +89,10 @@ class work(workhandler):
 			m.put()
 			s.redirect("/admn")
 		if i.path == "/set":
-			m = base(cate="account")
+			m = base(cate="account",data={})
 			if i.safe:
 				m = base.get(urlsafe=i.safe)
 			if i.command == "set":
-				m.data = m.data or {}
 				m.data.update({
 					"positive": i.positive.split(),
 					"negative": i.negative.split()
@@ -118,27 +124,26 @@ class work(workhandler):
 						continue
 					m=base(cate="tweet", kusr=a.key, data=j, temp=gettoken(j["text"]))
 					m.put()
-				friend(consumer_key, consumer_sec, a.data["oauth_token"], a.data["oauth_token_secret"], 10, a.data["positive"], a.data["negative"])
-			base.delete_multi(base.query(base.cate == "tweet", base.bone < datetime.datetime.now()-datetime.timedelta(days=30)).fetch(keys_only=True))
+				friend(consumer_key, consumer_sec, a.data["oauth_token"], a.data["oauth_token_secret"], 5, a.data["positive"], a.data["negative"])
+			base.delete_multi(base.query(base.cate == "tweet", base.bone < datetime.now()-timedelta(days=30)).fetch(keys_only=True))
 		if i.path=="/update":
-			accounts = base.query(base.cate == "account").order(-base.bone).fetch()
-			for a in accounts:
-				tweets = base.query(base.cate == "tweet",base.kusr==a.key).order(-base.bone).fetch()
-				every=[]
+			account = base.query(base.cate == "account",base.last<datetime.now()-timedelta(minutes=wait_minute)).get()
+			if account:
+				account.put()
+				tweets = base.query(base.cate == "tweet",base.kusr==account.key).order(-base.bone).fetch()
+				every=sum((t.temp for t in tweets),[])
 				original=tweets[0].temp
-				for t in tweets:
-					every.extend(t.temp)
 				generate=list(original)
 				for j,x in enumerate(original):
 					choice=[]
 					for k in every:
-						if x.get("backtext",1)==k.get("backtext",1) and x.get("backtype",1)==k.get("backtype",1):
-							if x.get("nexttext",1)==k.get("nexttext",1) and x.get("nexttype",1)==k.get("nexttype",1):
+						if x.get("backtext",1)==k.get("backtext",1) and x.get("nexttext",1)==k.get("nexttext",1):
+							if x.get("backtype", 1) == k.get("backtype", 1) and x.get("nexttype",1)==k.get("nexttype",1):
 								choice.append(k)
 					generate[j]=random.choice(choice)
 				status="".join(x["before"]+x["thistext"] for x in generate)
 				r = "POST","https://api.twitter.com/1.1/statuses/update.json", {"status": status}
-				r = request_oauth10(consumer_key, consumer_sec, a.data["oauth_token"], a.data["oauth_token_secret"], r[0], r[1],r[2])
+				r = request_oauth10(consumer_key, consumer_sec, account.data["oauth_token"], account.data["oauth_token_secret"], r[0], r[1],r[2])
 
 
 app = work.getapp()

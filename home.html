@@ -62,17 +62,17 @@
 		<table class="table">
 			<thead>
 			<tr>
-				<th>大学名</th>
-				<th>フォロー基準のbio単語</th>
-				<th>蓄積ツイート</th>
+				<th>アカウント</th>
+				<th>フォロー判定単語</th>
+				<th>フォロー解除単語</th>
 			</tr>
 			</thead>
 			<tbody>
-			{%for i in univ%}
+			{%for i in account%}
 			<tr>
-				<td>{{i.name}}</td>
-				<td>{{i.text}}</td>
-				<td>{{i.word}}</td>
+				<td><a href="https://twitter.com/{{i.name}}">リンク</a></td>
+				<td>{%for j in i.data.positive%}{{j}} {%endfor%}</td>
+				<td>{%for j in i.data.negative%}{{j}} {%endfor%}</td>
 			</tr>
 			{%endfor%}
 			</tbody>
