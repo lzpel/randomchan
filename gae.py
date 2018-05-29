@@ -3,7 +3,7 @@ import urllib
 from template import *
 from request import *
 from gitignore import *
-from datetime import timedelta,datetime
+from datetime import timedelta, datetime
 from google.appengine.api import urlfetch
 
 
@@ -18,40 +18,46 @@ def gettoken(alltext):
 	data = json.dumps({"document": {"type": "PLAIN_TEXT", "content": alltext}, "encodingType": "UTF8", })
 	r = request("post", "https://language.googleapis.com/v1beta2/documents:analyzeSyntax", {"key": google}, data, {'content-type': 'application/json'})
 	j = r.getjson()
-	start,result=0,[]
+	start, result = 0, []
 	for i in j["tokens"]:
-		text=i["text"]["content"]
-		type=i["partOfSpeech"]["tag"]
-		end= alltext.find(text, start)
-		result.append({"thistype":i["partOfSpeech"]["tag"],"thistext":i["text"]["content"],"before":alltext[start:end]})
-		start=end+len(text)
-	for i,x in enumerate(result):
-		if i!=0:
-			result[i-1].update({"nexttext":x["thistext"],"nexttype":x["thistype"]})
-		if i!=len(result)-1:
-			result[i+1].update({"backtext":x["thistext"],"backtype":x["thistype"]})
+		text = i["text"]["content"]
+		type = i["partOfSpeech"]["tag"]
+		end = alltext.find(text, start)
+		result.append({
+			"backtype": "", "backtext": "", "nexttype": "", "nexttext": "",
+			"thistype": i["partOfSpeech"]["tag"],
+			"thistext": i["text"]["content"],
+			"before": alltext[start:end]
+		})
+		start = end + len(text)
+	for i, x in enumerate(result):
+		if i != 0:
+			result[i - 1].update({"nexttext": x["thistext"], "nexttype": x["thistype"]})
+		if i != len(result) - 1:
+			result[i + 1].update({"backtext": x["thistext"], "backtype": x["thistype"]})
 	return result
 
-def friend(ck,cs,tk,ts,count,positive,negative):
-	def find(ck,cs,tk,ts, target, count,positive,negative):
+
+def friend(ck, cs, tk, ts, count, positive, negative):
+	def find(ck, cs, tk, ts, target, count, positive, negative):
 		# 条件に適合し未だフォローして無いならフォロー
 		# 条件に適応せずフォローしているなら案フォロー
 		if target:
-			target={"user_id":target}
+			target = {"user_id": target}
 		else:
-			target={}
-		friends = request_oauth10(ck, cs, tk, ts, "GET","https://api.twitter.com/1.1/friends/ids.json", target).getjson()
-		friends=friends["ids"]
-		friends = random.sample(friends,min(count,len(friends)))
-		for n,i in enumerate(friends):
-			user = request_oauth10(ck, cs, tk, ts, "GET","https://api.twitter.com/1.1/users/show.json", {"user_id":i}).getjson()
-			#条件
-			tmp=(user["screen_name"]+user["name"]+user["location"]+user["description"]).lower()
-			flag=any(tmp.find(w.lower()) >= 0 for w in positive) and all(tmp.find(w.lower()) < 0 for w in negative)
-			flag=flag and not user["protected"]
-			flag=flag and (user["friends_count"]/user["followers_count"])<1.5
-			#処理
-			print("num:{0} flag:{1} follow:{2} screen:{3}".format(n,flag,user["following"],user["screen_name"]))
+			target = {}
+		friends = request_oauth10(ck, cs, tk, ts, "GET", "https://api.twitter.com/1.1/friends/ids.json", target).getjson()
+		friends = friends["ids"]
+		friends = random.sample(friends, min(count, len(friends)))
+		for n, i in enumerate(friends):
+			user = request_oauth10(ck, cs, tk, ts, "GET", "https://api.twitter.com/1.1/users/show.json", {"user_id": i}).getjson()
+			# 条件
+			tmp = (user["screen_name"] + user["name"] + user["location"] + user["description"]).lower()
+			flag = any(tmp.find(w.lower()) >= 0 for w in positive) and all(tmp.find(w.lower()) < 0 for w in negative)
+			flag = flag and not user["protected"]
+			flag = flag and (user["friends_count"] / user["followers_count"]) < 1.5
+			# 処理
+			print("num:{0} flag:{1} follow:{2} screen:{3}".format(n, flag, user["following"], user["screen_name"]))
 			if flag and not user["following"]:
 				request_oauth10(ck, cs, tk, ts, "POST", "https://api.twitter.com/1.1/friendships/create.json", {"user_id": i})
 				print("follow")
@@ -59,19 +65,55 @@ def friend(ck,cs,tk,ts,count,positive,negative):
 				request_oauth10(ck, cs, tk, ts, "POST", "https://api.twitter.com/1.1/friendships/destroy.json", {"user_id": i})
 				print("unfollow")
 		return friends
-	if True:
-		r=find(ck,cs,tk,ts,None,count,positive,negative)
-	if r:
-		r=find(ck,cs,tk,ts,random.choice(r),count,positive,negative)
 
+	if True:
+		r = find(ck, cs, tk, ts, None, count, positive, negative)
+	if r:
+		r = find(ck, cs, tk, ts, random.choice(r), count, positive, negative)
+
+
+def generate(every):
+	generate = [{"thistype": "", "thistext": "", "before": ""}]
+	while True:
+		candidate=[range(len(every))]
+		for i in range(len(generate)):
+			next=[]
+			for j in candidate[-1]:
+				if j - i >=0:
+					a,b = every[j - i],generate[-i-1]
+					if (a.get("backtext", 1), a.get("backtype", 1)) == (b.get("thistext", 1), b.get("thistype", 1)):
+						next.append(j)
+			if next:
+				candidate.append(next)
+				if len(next)==1:
+					break
+			else:
+				break
+		if len(candidate)==1:
+			return []#error
+		elif len(candidate)==2:
+			candidate=candidate[-1]
+		else:
+			if len(candidate[-1])>=2:
+				candidate=candidate[-1]
+			else:
+				candidate=candidate[-2]
+		generate.append(every[random.choice(candidate)])
+		if generate[-1]["nexttext"] == "":
+			break
+	return generate
+
+
+def synth(generate):
+	return "".join(x["before"] + x["thistext"] for x in generate)
 
 
 class work(workhandler):
 	def work(s, i):
 		sethttpfunc(httpfunc)
 		if i.path == "/":
-			out={
-				"account":base.query(base.cate == "account").order(-base.bone).fetch()
+			out = {
+				"account": base.query(base.cate == "account").order(-base.bone).fetch()
 			}
 			s.write_temp("home.html", out)
 		if i.path == "/admn":
@@ -89,7 +131,7 @@ class work(workhandler):
 			m.put()
 			s.redirect("/admn")
 		if i.path == "/set":
-			m = base(cate="account",data={})
+			m = base(cate="account", data={})
 			if i.safe:
 				m = base.get(urlsafe=i.safe)
 			if i.command == "set":
@@ -108,42 +150,53 @@ class work(workhandler):
 			if i.command == "del":
 				m.key.delete()
 				s.redirect("/admn")
-		if i.path == "/store":
+		if i.path == "/friend":
+			accounts = base.query(base.cate == "account").order(-base.bone).fetch()
+			for a in accounts:
+				friend(consumer_key, consumer_sec, a.data["oauth_token"], a.data["oauth_token_secret"], 10, a.data["positive"], a.data["negative"])
+
+		if i.path == "/timeline":
 			accounts = base.query(base.cate == "account").order(-base.bone).fetch()
 			for a in accounts:
 				r = "https://api.twitter.com/1.1/statuses/home_timeline.json", {"count": 10}
 				r = request_oauth10(consumer_key, consumer_sec, a.data["oauth_token"], a.data["oauth_token_secret"], "GET", r[0], r[1])
-				for j in r.getjson():
-					#条件絞り込み
-					if all(j["source"].find(k) < 0 for k in source):
-						continue
-					if "retweeted_status" in j:
-						continue
-					entity = j["entities"]
-					if entity.get("media", None) or entity.get("urls", None):
-						continue
-					m=base(cate="tweet", kusr=a.key, data=j, temp=gettoken(j["text"]))
-					m.put()
-				friend(consumer_key, consumer_sec, a.data["oauth_token"], a.data["oauth_token_secret"], 5, a.data["positive"], a.data["negative"])
-			base.delete_multi(base.query(base.cate == "tweet", base.bone < datetime.now()-timedelta(days=30)).fetch(keys_only=True))
-		if i.path=="/update":
-			account = base.query(base.cate == "account",base.last<datetime.now()-timedelta(minutes=wait_minute)).get()
+				r = r.getjson()
+				if isinstance(r,list):
+					for j in r:
+						# 条件絞り込み
+						if all(j["source"].find(k) < 0 for k in ["Twitter for iPhone", "Twitter for Android", "Twitter Web Client"]):
+							continue
+						if "retweeted_status" in j:
+							continue
+						entity = j["entities"]
+						for k in entity.get("media", []) + entity.get("urls", []):
+							continue
+						m = base(cate="tweet", kusr=a.key, data=j, temp=gettoken(j["text"]))
+						m.put()
+				else:
+					s.write_json(r)
+			base.delete_multi(base.query(base.cate == "tweet", base.bone < datetime.now() - timedelta(days=15)).fetch(keys_only=True))
+		if i.path == "/update":
+			deadline = datetime.now() - timedelta(minutes=int(i.minutes))
+			account = base.query(base.cate == "account").fetch()
+			account = filter(lambda n: n.last < deadline, account)
+			account = account and account[0]
 			if account:
+				tweets = base.query(base.cate == "tweet", base.kusr == account.key).order(-base.bone).fetch()
+				tokens = sum((t.temp for t in tweets), [])
+				text1 = synth(tokens)
+				output = generate(tokens)
+				text2 = synth(output)
+				r = "POST", "https://api.twitter.com/1.1/statuses/update.json", {"status": text2}
+				r = request_oauth10(consumer_key, consumer_sec, account.data["oauth_token"], account.data["oauth_token_secret"], r[0], r[1], r[2])
+				s.write(u"{name}\nstatus = {status}".format(name=account.name,status=text2))
 				account.put()
-				tweets = base.query(base.cate == "tweet",base.kusr==account.key).order(-base.bone).fetch()
-				every=sum((t.temp for t in tweets),[])
-				original=tweets[0].temp
-				generate=list(original)
-				for j,x in enumerate(original):
-					choice=[]
-					for k in every:
-						if x.get("backtext",1)==k.get("backtext",1) and x.get("nexttext",1)==k.get("nexttext",1):
-							if x.get("backtype", 1) == k.get("backtype", 1) and x.get("nexttype",1)==k.get("nexttype",1):
-								choice.append(k)
-					generate[j]=random.choice(choice)
-				status="".join(x["before"]+x["thistext"] for x in generate)
-				r = "POST","https://api.twitter.com/1.1/statuses/update.json", {"status": status}
-				r = request_oauth10(consumer_key, consumer_sec, account.data["oauth_token"], account.data["oauth_token_secret"], r[0], r[1],r[2])
+			else:
+				s.write(u"empty")
+		if i.path == "/forget":
+			base.delete_multi(base.query(base.cate == "tweet").fetch(1000,keys_only=True))
+			s.write("deletall")
+
 
 
 app = work.getapp()

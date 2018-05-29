@@ -1,12 +1,17 @@
 ﻿cron:
-#- description: "minute price"
-#  url: /minute
-#  schedule: every 1 minutes
 
 - description: "store"
-  url: /store
+  url: /timeline
   schedule: every 20 minutes
 
+- description: "friend"
+  url: /friend
+  schedule: every 120 minutes
+
 - description: "update"
-  url: /update
+  url: /update?minutes=30
   schedule: every 1 minutes
+
+#- description: "forget"
+#  url: /forget
+#  schedule: every 1 minutes
