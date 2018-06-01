@@ -1,6 +1,6 @@
 ﻿cron:
 
-- description: "store"
+- description: "timeline"
   url: /timeline
   schedule: every 20 minutes
 

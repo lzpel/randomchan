@@ -158,6 +158,7 @@ class work(workhandler):
 		if i.path == "/timeline":
 			accounts = base.query(base.cate == "account").order(-base.bone).fetch()
 			for a in accounts:
+				s.write(u",".join(a.data["positive"])+u"<br>")
 				r = "https://api.twitter.com/1.1/statuses/home_timeline.json", {"count": 10}
 				r = request_oauth10(consumer_key, consumer_sec, a.data["oauth_token"], a.data["oauth_token_secret"], "GET", r[0], r[1])
 				r = r.getjson()
@@ -166,13 +167,16 @@ class work(workhandler):
 						# 条件絞り込み
 						if all(j["source"].find(k) < 0 for k in ["Twitter for iPhone", "Twitter for Android", "Twitter Web Client"]):
 							continue
-						if "retweeted_status" in j:
+						if j.get("retweeted_status",0):
+							continue
+						if j.get("in_reply_to_status_id",0):
 							continue
 						entity = j["entities"]
-						for k in entity.get("media", []) + entity.get("urls", []):
+						if entity.get("urls",0):
 							continue
 						m = base(cate="tweet", kusr=a.key, data=j, temp=gettoken(j["text"]))
 						m.put()
+						s.write(j["text"]+u"<br>")
 				else:
 					s.write_json(r)
 			base.delete_multi(base.query(base.cate == "tweet", base.bone < datetime.now() - timedelta(days=15)).fetch(keys_only=True))
@@ -182,20 +186,26 @@ class work(workhandler):
 			account = filter(lambda n: n.last < deadline, account)
 			account = account and account[0]
 			if account:
+				s.write(u",".join(account.data["positive"])+u"<br>")
 				tweets = base.query(base.cate == "tweet", base.kusr == account.key).order(-base.bone).fetch()
-				tokens = sum((t.temp for t in tweets), [])
-				text1 = synth(tokens)
-				output = generate(tokens)
-				text2 = synth(output)
-				r = "POST", "https://api.twitter.com/1.1/statuses/update.json", {"status": text2}
-				r = request_oauth10(consumer_key, consumer_sec, account.data["oauth_token"], account.data["oauth_token_secret"], r[0], r[1], r[2])
-				s.write(u"{name}\nstatus = {status}".format(name=account.name,status=text2))
+				if tweets[0].bone<datetime.now() - timedelta(hours=1):
+					s.write(u"too old<br>")
+				else:
+					tokens = sum((t.temp for t in tweets), [])
+					text1 = synth(tokens)
+					output = generate(tokens)
+					text2 = synth(output)
+					r = "POST", "https://api.twitter.com/1.1/statuses/update.json", {"status": text2}
+					r = request_oauth10(consumer_key, consumer_sec, account.data["oauth_token"], account.data["oauth_token_secret"], r[0], r[1], r[2])
+					s.write(u"{name}\nstatus = {status}".format(name=account.name,status=text2))
 				account.put()
 			else:
-				s.write(u"empty")
+				s.write(u"empty<br>")
 		if i.path == "/forget":
 			base.delete_multi(base.query(base.cate == "tweet").fetch(1000,keys_only=True))
 			s.write("deletall")
+		if i.path == "/test":
+			gettoken(u"")
 
 
 
